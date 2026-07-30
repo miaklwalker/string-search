@@ -95,6 +95,34 @@ new Search()
 	.defineBehavior("stop-on-match"); // Levenshtein only runs if the first two miss
 ```
 
+### `.cullMatchedRows(enabled?)`
+
+`true` by default. In a `find-all` pipeline, once any algorithm matches a row,
+later algorithms in the run order skip scoring that row entirely instead of
+re-matching a candidate you already have. This matters once you stack several
+`find-all` algorithms over the same dataset — without it, a candidate that the
+cheap algorithm already caught still gets run through every expensive one
+behind it, for a result you already had.
+
+```ts
+new Search()
+	.register(NaiveSearch())
+	.register(Levenshtein())          // skips rows NaiveSearch already matched
+	.defineDataset(allModels)
+	.defineBehavior("find-all")
+	.cullMatchedRows();                // true by default, call with false to disable
+
+new Search()
+	.register(NaiveSearch())
+	.register(Levenshtein())
+	.defineDataset(allModels)
+	.cullMatchedRows(false);           // every algorithm sees every row, old behavior
+```
+
+Culling has no effect on an algorithm that stops at its own first match —
+nothing runs after it either way. The benefit is specific to `find-all`
+pipelines with more than one algorithm registered.
+
 ### `.search(query)`
 
 Runs the pipeline and returns a `SearchResult`:

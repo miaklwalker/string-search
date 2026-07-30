@@ -50,6 +50,12 @@ export type AlgorithmRunContext = {
 	threshold: number;
 	/** Maximum number of matches to collect. `Infinity` when uncapped. */
 	limit: number;
+	/**
+	 * Indices already claimed by an earlier algorithm in the run order. Empty
+	 * when `cullMatchedRows` is off. `BaseAlgorithm.run` skips scoring these
+	 * entirely, rather than scoring them and discarding the result.
+	 */
+	culled: ReadonlySet<number>;
 };
 
 /** What every algorithm's `run` returns. */

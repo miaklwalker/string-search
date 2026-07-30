@@ -49,6 +49,7 @@ export class Search<TAlgorithms extends string = never> {
 	private dataset: readonly string[] | undefined;
 	private order: readonly string[] | undefined;
 	private behavior: MatchBehavior = "find-all";
+	private cullRows = true;
 
 	/** The algorithms registered so far, in registration order. */
 	get algorithms(): TAlgorithms[] {
@@ -125,6 +126,29 @@ export class Search<TAlgorithms extends string = never> {
 		return this;
 	}
 
+	/**
+	 * Controls whether a row that one algorithm marks as a match is removed
+	 * from the pool that later algorithms in the run order search through.
+	 * `true` by default.
+	 *
+	 * In a `find-all` pipeline, several algorithms otherwise all score the
+	 * same candidate that an earlier one already claimed — wasted work on
+	 * expensive algorithms, and duplicate matches to sift through. With
+	 * culling on, once any algorithm matches a row, later algorithms skip
+	 * scoring it entirely rather than scoring it and finding it again.
+	 *
+	 * Call `.cullMatchedRows(false)` to have every algorithm see the whole
+	 * dataset regardless of what earlier ones matched — the old behavior.
+	 *
+	 * ```ts
+	 * search.cullMatchedRows(false); // every algorithm sees every row
+	 * ```
+	 */
+	cullMatchedRows(enabled = true): this {
+		this.cullRows = enabled;
+		return this;
+	}
+
 	/** Runs the pipeline against `query` and returns every match it produced. */
 	search(query: string): SearchResult {
 		if (this.dataset === undefined) {
@@ -142,6 +166,7 @@ export class Search<TAlgorithms extends string = never> {
 		const matches: SearchMatch[] = [];
 		const byAlgorithm: Record<string, AlgorithmMatch[]> = {};
 		const ranAlgorithms: string[] = [];
+		const culled = new Set<number>();
 
 		for (const name of order) {
 			const registration = this.registry.get(name);
@@ -158,12 +183,14 @@ export class Search<TAlgorithms extends string = never> {
 				threshold:
 					registration.options.threshold ?? registration.algorithm.threshold,
 				limit: registration.options.limit ?? Number.POSITIVE_INFINITY,
+				culled,
 			});
 
 			ranAlgorithms.push(name);
 			byAlgorithm[name] = result.matches;
 			for (const match of result.matches) {
 				matches.push({ ...match, algorithm: name });
+				if (this.cullRows) culled.add(match.index);
 			}
 
 			if (behavior === "stop-on-match" && result.matches.length > 0) break;

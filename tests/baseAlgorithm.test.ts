@@ -11,6 +11,7 @@ function context(
 		behavior: "find-all",
 		threshold: 0,
 		limit: Number.POSITIVE_INFINITY,
+		culled: new Set(),
 		...overrides,
 	};
 }
@@ -72,5 +73,15 @@ describe("BaseAlgorithm.run", () => {
 
 		assert.deepStrictEqual(result.matches, []);
 		assert.deepStrictEqual(algorithm.seen, []);
+	});
+
+	test("skips culled indices without scoring them", () => {
+		const algorithm = alwaysMatch("stub");
+		const result = algorithm.run(MODELS, context({ culled: new Set([0, 2]) }));
+
+		assert.strictEqual(result.matches.length, MODELS.length - 2);
+		assert.strictEqual(algorithm.seen.length, MODELS.length - 2);
+		assert.ok(!result.matches.some((match) => match.index === 0));
+		assert.ok(!result.matches.some((match) => match.index === 2));
 	});
 });

@@ -6,7 +6,12 @@ import {
 	Search,
 	SearchConfigError,
 } from "../modules/index.ts";
-import { alwaysMatch, MODELS, neverMatch } from "./support.ts";
+import {
+	alwaysMatch,
+	MODELS,
+	neverMatch,
+	StubAlgorithm,
+} from "./support.ts";
 
 describe("Search registration", () => {
 	test("registers under the algorithm's own name", () => {
@@ -97,6 +102,7 @@ describe("Search outcome behavior", () => {
 			.register(alwaysMatch("first", 0.4))
 			.register(alwaysMatch("second", 0.4))
 			.defineDataset(MODELS)
+			.cullMatchedRows(false)
 			.search("anything");
 
 		assert.deepStrictEqual(result.ranAlgorithms, ["first", "second"]);
@@ -145,6 +151,7 @@ describe("Search outcome behavior", () => {
 			.register(alwaysMatch("second", 0.4))
 			.defineDataset(MODELS)
 			.defineBehavior("stop-on-match")
+			.cullMatchedRows(false)
 			.search("anything");
 
 		assert.deepStrictEqual(result.ranAlgorithms, ["first", "second"]);
@@ -165,12 +172,76 @@ describe("Search outcome behavior", () => {
 	});
 });
 
+describe("Search.cullMatchedRows", () => {
+	test("is on by default — a later algorithm skips rows an earlier one already matched", () => {
+		const result = new Search()
+			.register(alwaysMatch("first", 0.4))
+			.register(alwaysMatch("second", 0.4))
+			.defineDataset(MODELS)
+			.search("anything");
+
+		assert.strictEqual(result.byAlgorithm.first?.length, MODELS.length);
+		assert.strictEqual(result.byAlgorithm.second?.length, 0);
+		assert.strictEqual(result.matches.length, MODELS.length);
+	});
+
+	test("only culls the rows actually matched, not the whole dataset", () => {
+		const matchesPro = new StubAlgorithm("first", (candidate) =>
+			candidate.includes("Pro") ? 0.9 : null,
+		);
+		const result = new Search()
+			.register(matchesPro)
+			.register(alwaysMatch("second", 0.4))
+			.defineDataset(MODELS)
+			.search("anything");
+
+		const proIndices = MODELS.map((_, index) => index).filter((index) =>
+			MODELS[index]?.includes("Pro"),
+		);
+
+		assert.strictEqual(result.byAlgorithm.first?.length, proIndices.length);
+		assert.strictEqual(
+			result.byAlgorithm.second?.length,
+			MODELS.length - proIndices.length,
+		);
+		for (const match of result.byAlgorithm.second ?? []) {
+			assert.ok(!proIndices.includes(match.index));
+		}
+	});
+
+	test("disabling it restores every algorithm seeing every row", () => {
+		const result = new Search()
+			.register(alwaysMatch("first", 0.4))
+			.register(alwaysMatch("second", 0.4))
+			.defineDataset(MODELS)
+			.cullMatchedRows(false)
+			.search("anything");
+
+		assert.strictEqual(result.byAlgorithm.first?.length, MODELS.length);
+		assert.strictEqual(result.byAlgorithm.second?.length, MODELS.length);
+		assert.strictEqual(result.matches.length, MODELS.length * 2);
+	});
+
+	test("re-enabling after disabling takes effect again", () => {
+		const result = new Search()
+			.register(alwaysMatch("first", 0.4))
+			.register(alwaysMatch("second", 0.4))
+			.defineDataset(MODELS)
+			.cullMatchedRows(false)
+			.cullMatchedRows(true)
+			.search("anything");
+
+		assert.strictEqual(result.byAlgorithm.second?.length, 0);
+	});
+});
+
 describe("Search results", () => {
 	test("reports the highest-confidence match as best", () => {
 		const result = new Search()
 			.register(alwaysMatch("weak", 0.3))
 			.register(alwaysMatch("strong", 0.95))
 			.defineDataset(["only"])
+			.cullMatchedRows(false)
 			.search("only");
 
 		assert.strictEqual(result.best?.algorithm, "strong");
@@ -183,6 +254,7 @@ describe("Search results", () => {
 			.register(NaiveSearch())
 			.register(KMP())
 			.defineDataset(MODELS)
+			.cullMatchedRows(false)
 			.search("iPad Mini");
 
 		assert.deepStrictEqual(

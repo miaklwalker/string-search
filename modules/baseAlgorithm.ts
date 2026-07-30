@@ -88,6 +88,8 @@ export abstract class BaseAlgorithm<TName extends string = string> {
 		const limit = context.behavior === "stop-on-match" ? 1 : context.limit;
 
 		for (let index = 0; index < dataset.length; index += 1) {
+			if (context.culled.has(index)) continue;
+
 			const candidate = dataset[index];
 			if (candidate === undefined) continue;
 
