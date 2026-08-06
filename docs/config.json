@@ -1,0 +1,34 @@
+{
+	"sections": [
+		{
+			"label": "Getting Started",
+			"children": [
+				{ "label": "Overview", "to": "overview" },
+				{ "label": "Installation", "to": "installation" },
+				{ "label": "Quick Start", "to": "quick-start" }
+			]
+		},
+		{
+			"label": "Guides",
+			"children": [
+				{ "label": "Pipeline Stages", "to": "guides/pipeline-stages" },
+				{ "label": "Run Order and Type Safety", "to": "guides/run-order-and-type-safety" },
+				{ "label": "Match Behavior", "to": "guides/match-behavior" },
+				{ "label": "Cheap-to-Expensive Cascades", "to": "guides/cascades" },
+				{ "label": "Culling Matched Rows", "to": "guides/culling-matched-rows" },
+				{ "label": "Working with Results", "to": "guides/working-with-results" },
+				{ "label": "Thresholds and Confidence", "to": "guides/thresholds-and-confidence" },
+				{ "label": "Writing a Custom Algorithm", "to": "guides/custom-algorithms" }
+			]
+		},
+		{
+			"label": "Reference",
+			"children": [
+				{ "label": "Search Class", "to": "reference/search-api" },
+				{ "label": "Bundled Algorithms", "to": "reference/algorithms" },
+				{ "label": "Types", "to": "reference/types" },
+				{ "label": "Errors", "to": "reference/errors" }
+			]
+		}
+	]
+}
