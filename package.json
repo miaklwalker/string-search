@@ -1,6 +1,6 @@
 {
 	"name": "@michaelrwalker/search",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "A composable, type-safe search pipeline: register algorithms, define a dataset, control run order and match behavior.",
 	"homepage": "https://michaelrwalker.netlify.app/search",
 	"type": "module",
